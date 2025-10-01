@@ -4,7 +4,7 @@ using System.Collections.Generic;
 /// <summary>
 /// Транзакция
 /// </summary>
-public class Transaction
+public class Transactions
 {
     /// <summary>
     /// Id транзакции
@@ -47,9 +47,9 @@ public enum TransactionType
     /// <summary>
     /// Доход
     /// </summary>
-    Income,
+    Income = 0,
     /// <summary>
     /// Расход
     /// </summary>
-    Expense
+    Expense = 1
 }

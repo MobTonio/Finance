@@ -14,7 +14,7 @@ namespace Finance.EntityConfigurations
             entity.HasComment("Кошелек");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasComment("Идентификатор");
 
             entity.Property(e => e.Name)
@@ -25,7 +25,7 @@ namespace Finance.EntityConfigurations
                 .HasMaxLength(512)
                 .HasComment("Валюта");
 
-            entity.Property(e => e.InitialBalance)
+            entity.Property(e => e.Balance)
                .HasComment("Начальный баланс");
 
             OnConfigurePartial(entity);

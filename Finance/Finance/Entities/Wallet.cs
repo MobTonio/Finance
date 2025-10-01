@@ -24,10 +24,10 @@ public class Wallet
     /// <summary>
     /// Начальный баланс
     /// </summary>
-    public decimal InitialBalance { get; set; }
+    public decimal Balance { get; set; }
 
 
-    public virtual ICollection<Transaction> Transactions { get; set; }
+    public virtual ICollection<Transactions> Transactions { get; set; }
 
     /// <summary>
     /// Текущий баланс
@@ -38,7 +38,7 @@ public class Wallet
         {
             var income = Transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
             var expense = Transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
-            return InitialBalance + income - expense;
+            return Balance + income - expense;
         }
     }
 }

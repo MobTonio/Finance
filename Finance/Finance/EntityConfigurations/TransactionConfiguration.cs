@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace Finance.EntityConfigurations
 {
-    public partial class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
+    public partial class TransactionConfiguration : IEntityTypeConfiguration<Transactions>
     {
-        public void Configure(EntityTypeBuilder<Transaction> entity)
+        public void Configure(EntityTypeBuilder<Transactions> entity)
         {
             entity.HasKey(e => e.TransactionId);
-            entity.ToTable(nameof(Transaction));
+            entity.ToTable(nameof(Transactions));
             entity.HasComment("Транзакции");
             entity.HasIndex(e => e.TransactionId, "IX_AOD_AODUid"); // ??
 
             entity.Property(e => e.TransactionId)
-                .ValueGeneratedNever()
+                .ValueGeneratedOnAdd()
                 .HasComment("Идентификатор транзакции");
 
             entity.Property(e => e.WalletId)
@@ -32,7 +32,9 @@ namespace Finance.EntityConfigurations
                 .HasComment("Сумма");
 
             entity.Property(e => e.Type)
-                .HasMaxLength(50)
+                .HasConversion<string>() // Сохраняем как строку в БД
+                .IsRequired()
+                .HasMaxLength(10)
                 .HasComment("Тип");
 
             entity.Property(e => e.Description)
@@ -41,13 +43,13 @@ namespace Finance.EntityConfigurations
 
             entity.HasOne(d => d.Wallet)
                 .WithMany(p => p.Transactions)
-                .HasForeignKey(d => d.TransactionId)
+                .HasForeignKey(d => d.WalletId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Transactions_Wallett");
+                .HasConstraintName("FK_Transactions_Wallet");
 
             OnConfigurePartial(entity);
         }
 
-        partial void OnConfigurePartial(EntityTypeBuilder<Transaction> entity);
+        partial void OnConfigurePartial(EntityTypeBuilder<Transactions> entity);
     }
 }
