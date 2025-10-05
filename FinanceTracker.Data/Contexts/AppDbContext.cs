@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Finance.Contexts
+namespace FinanceTracker.Data.Contexts
 {
     public partial class AppDbContext : DbContext
     {
@@ -15,6 +15,12 @@ namespace Finance.Contexts
 
         public virtual DbSet<Transactions> Transactions { get; set; } = null!;
         public virtual DbSet<Wallet> Wallets { get; set; } = null!;
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    // Для PostgreSQL используйте UseNpgsql, а не UseSqlServer!
+        //    optionsBuilder.UseNpgsql("Host=finance-server;Port=5432;Database=financeDB;Username=postgres;Password=postgres");
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

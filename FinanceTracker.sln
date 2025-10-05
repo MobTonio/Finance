@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11018.127
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceTracker.Data", "FinanceTracker.Data\FinanceTracker.Data.csproj", "{60E2193D-5F7F-2788-1064-3AA296EF84D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceTracker.ConsoleApp", "FinanceTracker.ConsoleApp\FinanceTracker.ConsoleApp.csproj", "{D0DC21C1-CFBC-3A8E-7534-6934FEEA0901}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60E2193D-5F7F-2788-1064-3AA296EF84D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60E2193D-5F7F-2788-1064-3AA296EF84D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60E2193D-5F7F-2788-1064-3AA296EF84D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60E2193D-5F7F-2788-1064-3AA296EF84D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0DC21C1-CFBC-3A8E-7534-6934FEEA0901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0DC21C1-CFBC-3A8E-7534-6934FEEA0901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0DC21C1-CFBC-3A8E-7534-6934FEEA0901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0DC21C1-CFBC-3A8E-7534-6934FEEA0901}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C127C0DF-D04B-4E4C-90B8-A751DD80914F}
+	EndGlobalSection
+EndGlobal

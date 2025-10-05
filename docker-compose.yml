@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # PostgreSQL сервер
+  postgres:
+    image: postgres:15
+    container_name: finance-postgres
+    environment:
+      POSTGRES_DB: financeDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres      
+      LANG: ru_RU.UTF-8
+      LC_ALL: ru_RU.UTF-8
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - finance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d financeDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Консольное приложение
+  finance-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: finance-console-app
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=financeDB;Username=postgres;Password=postgres"
+      LANG: ru_RU.UTF-8
+      LC_ALL: ru_RU.UTF-8
+      DOTNET_RUNNING_IN_CONTAINER: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - finance-network
+    volumes:
+      - ./appsettings.Docker.json:/app/appsettings.json:ro
+    stdin_open: true
+    tty: true
+    command: ["dotnet", "FinanceTracker.ConsoleApp.dll"]
+    restart: on-failure
+
+volumes:
+  postgres_data:
+
+networks:
+  finance-network:
+    driver: bridge

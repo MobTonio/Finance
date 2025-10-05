@@ -24,9 +24,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.9" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
-
+	
   <ItemGroup>
-    <ProjectReference Include="..\Finance\Finance\Finance.csproj" />
+    <ProjectReference Include="..\FinanceTracker.Data\FinanceTracker.Data.csproj" />
   </ItemGroup>
 
 </Project>

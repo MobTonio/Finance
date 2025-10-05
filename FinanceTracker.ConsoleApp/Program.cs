@@ -1,8 +1,8 @@
-﻿using Finance.Contexts;
-using Finance.Repositories;
-using Finance.Services;
-using FinanceTracker.ConsoleApp;
-using Microsoft.Data.SqlClient;
+﻿using FinanceTracker.ConsoleApp;
+using FinanceTracker.ConsoleApp.Managers;
+using FinanceTracker.Data.Contexts;
+using FinanceTracker.Data.Repositories;
+using FinanceTracker.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,20 +11,53 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 
 internal class Program
 {
-
     private static readonly Action<DbContextOptionsBuilder> Builder = optionsBuilder =>
     {
         var connectionString = AppSettings.Instance.ConnectionString;
-        optionsBuilder.UseSqlServer(connectionString);
+
+        // Определяем тип базы данных по строке подключения
+        if (IsPostgreSQLConnectionString(connectionString))
+        {
+            optionsBuilder.UseNpgsql(connectionString);
+            Console.WriteLine("Using PostgreSQL provider");
+        }
+        else
+        {
+            optionsBuilder.UseSqlServer(connectionString);
+            Console.WriteLine("Using SQL Server provider");
+        }
     };
+
+    private static bool IsPostgreSQLConnectionString(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+            return false;
+
+        // Проверяем признаки PostgreSQL строки подключения
+        var lowerConnection = connectionString.ToLowerInvariant();
+        return lowerConnection.Contains("host=") ||
+               lowerConnection.Contains("server=localhost") ||
+               lowerConnection.Contains("user id=") ||
+               lowerConnection.Contains("username=") ||
+               lowerConnection.Contains("port=") &&
+               !lowerConnection.Contains("initial catalog") &&
+               !lowerConnection.Contains("integrated security");
+    }
+
+
     private static readonly string[] DateTimeFormats = { "dd.MM.yyyy HH:mm:ss", "dd.MM.yyyy" };
     private const string MessageInvalidFormatDate = "Invalid date format specified for \"{0}\" = \"{1}\", expected format \"{2}\"";
 
     static void Main(string[] args)
     {
+        // Принудительно устанавливаем кодировку UTF-8
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
         AppSettings.Initialize(new AppSettingsOptions
         {
             ProgrammeArguments = args,
@@ -42,101 +75,82 @@ internal class Program
         using var scope = provider.CreateScope();
         var serviceProvider = scope.ServiceProvider;
 
-
-        // --- Создание базы и заполнение тестовыми данными ---
         using (var context = serviceProvider.GetRequiredService<AppDbContext>())
         {
             context.Database.EnsureCreated();
-            context.Database.Migrate();
 
+            // Заполняем тестовыми данными
+            SeedTestData(serviceProvider).Wait();
+
+            // Запускаем главное меню финансов
             RunFinance(serviceProvider);
         }
-        // -----------------------------------------------------
 
 
         Console.WriteLine("Done. Press any key to exit...");
         Console.ReadLine();
     }
 
-    private static void SeedTestData(AppDbContext context)
+    /// <summary>
+    /// Заполнение тестовыми данными
+    /// </summary>
+    static async Task SeedTestData(IServiceProvider serviceProvider)
     {
-        var wallets = new[]
+        var walletRepo = serviceProvider.GetRequiredService<WalletRepository>();
+        var transactionRepo = serviceProvider.GetRequiredService<TransactionRepository>();
+
+        Console.WriteLine("Заполнить базу тестовыми данными? (y/n)");
+        var response = Console.ReadLine();
+
+        if (response?.ToLower() == "y")
         {
-            new Wallet { Name = "Основной кошелек", Currency = "RUB", Balance = 1000 },
-            new Wallet { Name = "Запасной кошелек", Currency = "RUB", Balance = 500 },
-            new Wallet { Name = "Долларовый кошелек", Currency = "USD", Balance = 100 },
-            new Wallet { Name = "Евро кошелек", Currency = "EUR", Balance = 200 }
-        };
-
-        context.Wallets.AddRange(wallets);
-        context.SaveChanges();
-
-        var random = new Random();
-        var transactions = new[]
-        {
-            // Кошелек 1 (Основной) - 7 транзакций
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-30), Amount = 50000, Type = TransactionType.Income, Description = "Зарплата" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-25), Amount = 15000, Type = TransactionType.Expense, Description = "Аренда квартиры" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-20), Amount = 5000, Type = TransactionType.Expense, Description = "Коммунальные услуги" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-15), Amount = 3000, Type = TransactionType.Expense, Description = "Продукты" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-10), Amount = 2000, Type = TransactionType.Expense, Description = "Одежда" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-5), Amount = 8000, Type = TransactionType.Income, Description = "Фриланс" },
-            new Transactions { WalletId = 1, Date = DateTime.Now.AddDays(-2), Amount = 1500, Type = TransactionType.Expense, Description = "Ресторан" },
-
-            // Кошелек 2 (Запасной) - 6 транзакций
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-28), Amount = 10000, Type = TransactionType.Income, Description = "Подарок" },
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-22), Amount = 3000, Type = TransactionType.Expense, Description = "Техника" },
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-18), Amount = 2000, Type = TransactionType.Expense, Description = "Книги" },
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-12), Amount = 5000, Type = TransactionType.Income, Description = "Возврат долга" },
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-8), Amount = 1000, Type = TransactionType.Expense, Description = "Такси" },
-            new Transactions { WalletId = 2, Date = DateTime.Now.AddDays(-3), Amount = 1500, Type = TransactionType.Expense, Description = "Кино" },
-
-            // Кошелек 3 (Долларовый) - 6 транзакций
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-27), Amount = 500, Type = TransactionType.Income, Description = "Перевод" },
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-21), Amount = 100, Type = TransactionType.Expense, Description = "Amazon" },
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-17), Amount = 50, Type = TransactionType.Expense, Description = "Netflix" },
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-14), Amount = 200, Type = TransactionType.Income, Description = "Фриланс $" },
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-9), Amount = 75, Type = TransactionType.Expense, Description = "Spotify" },
-            new Transactions { WalletId = 3, Date = DateTime.Now.AddDays(-4), Amount = 150, Type = TransactionType.Expense, Description = "Udemy" },
-
-            // Кошелек 4 (Евро) - 6 транзакций
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-26), Amount = 300, Type = TransactionType.Income, Description = "Перевод EUR" },
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-19), Amount = 80, Type = TransactionType.Expense, Description = "AliExpress" },
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-16), Amount = 40, Type = TransactionType.Expense, Description = "Steam" },
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-13), Amount = 120, Type = TransactionType.Income, Description = "Продажа" },
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-7), Amount = 60, Type = TransactionType.Expense, Description = "PlayStation" },
-            new Transactions { WalletId = 4, Date = DateTime.Now.AddDays(-1), Amount = 90, Type = TransactionType.Expense, Description = "Booking" }
-        };
-
-        context.Transactions.AddRange(transactions);
-        context.SaveChanges();
+            await walletRepo.SeedTestWalletsAsync();
+            await transactionRepo.SeedTestTransactionsAsync();
+            Console.WriteLine("База заполнена тестовыми данными");
+        }
     }
 
 
     private static void RunFinance(IServiceProvider serviceProvider)
     {
-        Console.WriteLine("Добро пожаловать в Систему Менеджмента Финансов");
-
-        Console.WriteLine("Пожалуйста выберете действие:\n"
-            + "1. Для указанного месяца сгруппировать все транзакции по типу (Income/Expense), отсортировать группы по общей сумме (по убыванию), в каждой группе отсортировать транзакции по дате (от самых старых к самым новым)\n"
-            + "2. 3 самые большие траты за указанный месяц для каждого кошелька, отсортированные по убыванию суммы");
-
-        var chosenAction = Console.ReadLine();
-
-        if (chosenAction != "1" && chosenAction != "2")
+        while (true)
         {
-            Console.WriteLine("Некорректный ввод");
-            return;
-        }
+            Console.Clear();
+            Console.WriteLine("=== СИСТЕМА МЕНЕДЖМЕНТА ФИНАНСОВ ===");
+            Console.WriteLine("=== ОСНОВНЫЕ ДЕЙСТВИЯ ===");
+            Console.WriteLine("1. Анализ транзакций по месяцам");
+            Console.WriteLine("2. Топ расходов по кошелькам");
+            Console.WriteLine("");
+            Console.WriteLine("=== СЛУЖЕБНЫЕ ФУНКЦИИ ===");
+            Console.WriteLine("3. Управление кошельками");
+            Console.WriteLine("4. Управление транзакциями");
+            Console.WriteLine("0. Выход");
+            Console.Write("Выберите действие: ");
 
-        switch (chosenAction)
-        {
-            case "1":
-                ActionOne(serviceProvider);
-                break;
-            case "2":
-                ActionTwo(serviceProvider);
-                break;
+            var chosenAction = Console.ReadLine();
+
+            switch (chosenAction)
+            {
+                case "1":
+                    ActionOne(serviceProvider);
+                    break;
+                case "2":
+                    ActionTwo(serviceProvider);
+                    break;
+                case "3":
+                    RunWalletManager(serviceProvider).Wait();
+                    break;
+                case "4":
+                    RunTransactionManager(serviceProvider).Wait();
+                    break;
+                case "0":
+                    return;
+                default:
+                    Console.WriteLine("Некорректный ввод");
+                    Console.WriteLine("Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                    break;
+            }
         }
     }
 
@@ -161,6 +175,8 @@ internal class Program
         var transactions = serviceProvider.GetRequiredService<TransactionRepository>();
 
         transactions.ShowForMonth(monthYear);
+        Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+        Console.ReadKey();
     }
 
     /// <summary>
@@ -182,5 +198,31 @@ internal class Program
         int countPerWallet = 3;
 
         wallets.ShowTopExpensesPerWallet(monthYear, countPerWallet);
+        Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+        Console.ReadKey();
+    }
+
+
+    /// <summary>
+    /// Запуск менеджера кошельков
+    /// </summary>
+    private static async Task RunWalletManager(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var walletRepo = scope.ServiceProvider.GetRequiredService<WalletRepository>();
+        var walletManager = new WalletManager(walletRepo);
+        await walletManager.RunAsync();
+    }
+
+    /// <summary>
+    /// Запуск менеджера транзакций
+    /// </summary>
+    private static async Task RunTransactionManager(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var transactionRepo = scope.ServiceProvider.GetRequiredService<TransactionRepository>();
+        var walletRepo = scope.ServiceProvider.GetRequiredService<WalletRepository>();
+        var transactionManager = new TransactionManager(transactionRepo, walletRepo);
+        await transactionManager.RunAsync();
     }
 }

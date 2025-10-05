@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Finance.EntityConfigurations
+namespace FinanceTracker.Data.EntityConfigurations
 {
     public partial class TransactionConfiguration : IEntityTypeConfiguration<Transactions>
     {
@@ -25,7 +25,8 @@ namespace Finance.EntityConfigurations
                 .HasComment("Идентификатор кошелька");
 
             entity.Property(e => e.Date)
-                .HasColumnType("datetime")
+                .HasColumnType("timestamp")
+                .HasDefaultValueSql("NOW()")
                 .HasComment("Дата");
 
             entity.Property(e => e.Amount)

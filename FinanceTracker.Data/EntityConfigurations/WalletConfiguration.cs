@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
 
-namespace Finance.EntityConfigurations
+namespace FinanceTracker.Data.EntityConfigurations
 {
     public partial class WalletConfiguration : IEntityTypeConfiguration<Wallet>
     {
